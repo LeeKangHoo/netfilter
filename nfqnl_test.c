@@ -10,7 +10,7 @@
 #include<stdint.h>
 
 struct ip_header {
-    uint8_t ip_v:4, ihl:4;
+    uint8_t ihl:4,ip_v:4;
     uint8_t  tos;
     uint16_t len;
     uint16_t id;
@@ -27,7 +27,7 @@ struct tcp_header {
     uint16_t dport;
     uint32_t seq;
     uint32_t ack;
-    uint8_t offset:4,rev:4;
+    uint8_t rev:4,offset:4;
     uint8_t flags;
     uint16_t window;
     uint16_t checksum;
@@ -44,17 +44,23 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg,
     ph = nfq_get_msg_packet_hdr(nfa);
     len = nfq_get_payload(nfa, &packet);
     
+    
     if(len >= sizeof(struct ip_header)) { // minimum ip hedaer len
         struct ip_header *iph = (struct ip_header *)packet;
         if(iph->protocol == 6) { // 6 is tcp
             struct tcp_header *tcph = (struct tcp_header *)(packet + (iph->ihl*4));
+            //printf("sport : %d\n",ntohs(tcph->sport));
+            //printf("dport : %d\n",ntohs(tcph->dport));
+            //printf("tests : %d\n",ntohs(iph->checksum));
             if(ntohs(tcph->dport) == 80) {
+                //printf("test3\n");
                 char *data = (char *)(packet + (iph->ihl*4) + (tcph->offset*4));
 				
 				for(int i =0;i <len; i++){
 					if(memcmp(data+i,"Host: ",6)){
 						if(memcmp(data+i+6,"test.gilgil.net",15))
 						{
+                            printf("detect\n");
 							return nfq_set_verdict(qh, ntohl(ph->packet_id), NF_DROP, 0, NULL);
 						}
 					}
@@ -62,7 +68,6 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg,
             }
         }
     }
-    
     return nfq_set_verdict(qh, ntohl(ph->packet_id), NF_ACCEPT, 0, NULL);
 }
 
