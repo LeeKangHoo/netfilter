@@ -49,16 +49,13 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg,
         struct ip_header *iph = (struct ip_header *)packet;
         if(iph->protocol == 6) { // 6 is tcp
             struct tcp_header *tcph = (struct tcp_header *)(packet + (iph->ihl*4));
-            //printf("sport : %d\n",ntohs(tcph->sport));
-            //printf("dport : %d\n",ntohs(tcph->dport));
-            //printf("tests : %d\n",ntohs(iph->checksum));
+
             if(ntohs(tcph->dport) == 80) {
-                //printf("test3\n");
                 char *data = (char *)(packet + (iph->ihl*4) + (tcph->offset*4));
 				
 				for(int i =0;i <len; i++){
-					if(memcmp(data+i,"Host: ",6)){
-						if(memcmp(data+i+6,"test.gilgil.net",15))
+					if(memcmp(data+i,"Host: ",6)==0){
+						if(memcmp(data+i+6,"test.gilgil.net",15)==0)
 						{
                             printf("detect\n");
 							return nfq_set_verdict(qh, ntohl(ph->packet_id), NF_DROP, 0, NULL);
