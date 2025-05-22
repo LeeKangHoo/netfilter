@@ -9,6 +9,8 @@
 #include <string.h>
 #include<stdint.h>
 
+char target[256];
+
 struct ip_header {
     uint8_t ihl:4,ip_v:4;
     uint8_t  tos;
@@ -55,11 +57,14 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg,
 				
 				for(int i =0;i <len; i++){
 					if(memcmp(data+i,"Host: ",6)==0){
-						if(memcmp(data+i+6,"test.gilgil.net",15)==0)
+						if(memcmp(data+i+6,target,strlen(target))==0)
 						{
                             printf("detect\n");
 							return nfq_set_verdict(qh, ntohl(ph->packet_id), NF_DROP, 0, NULL);
 						}
+                        else{
+                            return nfq_set_verdict(qh, ntohl(ph->packet_id), NF_ACCEPT, 0, NULL);
+                        }
 					}
 				}
             }
@@ -70,6 +75,9 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg,
 
 int main(int argc, char* argv[])
 {
+    fgets(target,256,stdin);
+    target[strlen(target)-1] = '\0';
+
     struct nfq_handle *h;
     struct nfq_q_handle *qh;
     int fd;
